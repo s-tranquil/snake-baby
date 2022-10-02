@@ -1,5 +1,7 @@
 import './style.css'
 import { Engine, Scene, FreeCamera, HemisphericLight, MeshBuilder, Vector3, Color4, StandardMaterial, Color3, ArcRotateCamera, Mesh, KeyboardEventTypes } from "@babylonjs/core";
+import { snakeStore } from './store';
+import { Direction, Snake } from './types';
 
 const HALF_CUBE_SIZE = 0.5;
 
@@ -27,6 +29,27 @@ function createLines(x: number, y: number) {
   }
   return lines;
 }
+
+const snakeMeshCollection: Mesh[] = [];
+function renderSnake(scene, body: Snake["body"]) {
+  const snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
+  snakeBodyMaterial.diffuseColor = new Color3(0, 1, 0);
+
+  snakeMeshCollection.forEach(x => x.dispose());
+  snakeMeshCollection.splice(0, snakeMeshCollection.length);
+
+  body.forEach((segment, index) => {
+    const box = MeshBuilder.CreateBox(`box${index}`, {
+        size: 1,
+    }, scene);
+    box.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
+    box.material = snakeBodyMaterial;
+    box.checkCollisions = true;
+    snakeMeshCollection.push(box);
+  });
+}
+
+const store = snakeStore;
 
 function createScene() {
   const scene = new Scene(engine);
@@ -62,16 +85,12 @@ function createScene() {
 
   const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
-  const box = MeshBuilder.CreateBox("box", {
-      size: 1,
-  }, scene);
-  box.position = new Vector3(2, HALF_CUBE_SIZE, 0)
 
-  const snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
-  snakeBodyMaterial.diffuseColor = new Color3(0, 1, 0);
-  box.material = snakeBodyMaterial;
-
-  box.checkCollisions = true;
+  renderSnake(scene, store.getState().snake.body);
+  const unsubscribe = store.subscribe((state) => {
+    const body = state.snake.body;
+    renderSnake(scene, body);
+  });
 
   scene.onKeyboardObservable.add((kbInfo) => {
 		switch (kbInfo.type) {
@@ -79,21 +98,24 @@ function createScene() {
 				switch (kbInfo.event.key) {
           case "a":
           case "A":
-            box.position.x -= 1;
-          break
+            store.getState().changeDirection(Direction.Left);
+            break;
           case "d":
           case "D":
-            box.position.x += 1;
-          break
+            store.getState().changeDirection(Direction.Right);
+            break;
           case "w":
           case "W":
-            box.position.z += 1;
-          break
+            store.getState().changeDirection(Direction.Up);
+            break;
           case "s":
           case "S":
-            box.position.z -= 1;
-          break
-      }
+            store.getState().changeDirection(Direction.Down);
+            break;
+          case " ":
+            store.getState().start();
+            break;
+        }
 			break;
 		}
 	});
