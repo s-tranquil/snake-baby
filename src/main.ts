@@ -1,5 +1,5 @@
 import './style.css'
-import { Engine, Scene, FreeCamera, HemisphericLight, MeshBuilder, Vector3, Color4, StandardMaterial, Color3, ArcRotateCamera, Mesh, KeyboardEventTypes } from "@babylonjs/core";
+import { Engine, Scene, HemisphericLight, MeshBuilder, Vector3, StandardMaterial, Color3, ArcRotateCamera, Mesh, KeyboardEventTypes } from "@babylonjs/core";
 import { snakeStore } from './store';
 import { Direction, Snake } from './types';
 
@@ -31,7 +31,7 @@ function createLines(x: number, y: number) {
 }
 
 const snakeMeshCollection: Mesh[] = [];
-function renderSnake(scene, body: Snake["body"]) {
+function renderSnake(scene: Scene, body: Snake["body"]) {
   const snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
   snakeBodyMaterial.diffuseColor = new Color3(0, 1, 0);
 
@@ -83,11 +83,11 @@ function createScene() {
   // const camera = new FreeCamera("camera", new Vector3(0, 0, -10), scene);
   camera.attachControl(canvas, true);
 
-  const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+  new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
 
   renderSnake(scene, store.getState().snake.body);
-  const unsubscribe = store.subscribe((state) => {
+  store.subscribe((state) => {
     const body = state.snake.body;
     renderSnake(scene, body);
   });
