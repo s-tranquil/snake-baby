@@ -1,7 +1,7 @@
 import './style.css'
 import { Engine, Scene, HemisphericLight, MeshBuilder, Vector3, StandardMaterial, Color3, ArcRotateCamera, Mesh, KeyboardEventTypes } from "@babylonjs/core";
 import { snakeStore } from './store';
-import { Direction, Snake } from './types';
+import { Coordinates2d, Direction, Snake } from './types';
 
 const HALF_CUBE_SIZE = 0.5;
 
@@ -31,7 +31,7 @@ function createLines(x: number, y: number) {
 }
 
 const snakeMeshCollection: Mesh[] = [];
-function renderSnake(scene: Scene, body: Snake["body"]) {
+function renderSnake(scene: Scene, body: Snake["body"]): Mesh {
   const snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
   snakeBodyMaterial.diffuseColor = new Color3(0, 1, 0);
 
@@ -39,7 +39,7 @@ function renderSnake(scene: Scene, body: Snake["body"]) {
   snakeMeshCollection.splice(0, snakeMeshCollection.length);
 
   body.forEach((segment, index) => {
-    const box = MeshBuilder.CreateBox(`box${index}`, {
+    const box = MeshBuilder.CreateBox(`snakeBox${index}`, {
         size: 1,
     }, scene);
     box.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
@@ -47,6 +47,26 @@ function renderSnake(scene: Scene, body: Snake["body"]) {
     box.checkCollisions = true;
     snakeMeshCollection.push(box);
   });
+
+  const head = snakeMeshCollection[0];
+  head.computeWorldMatrix(true);
+  return head;
+}
+
+let edible: Mesh | undefined;
+function renderEdible(scene: Scene, edibleLocation: Coordinates2d): Mesh {
+  const edibleMaterial = new StandardMaterial("edibleMaterial", scene);
+  edibleMaterial.diffuseColor = Color3.Red();
+
+  edible = undefined;
+  // const edible = MeshBuilder.CreateSphere("edible", { diameter: 1 }, scene);
+  edible = MeshBuilder.CreateSphere("edible", { diameter: 0.99 }, scene);
+  edible.position = new Vector3(edibleLocation.x, HALF_CUBE_SIZE, edibleLocation.y);
+  edible.material = edibleMaterial;
+  edible.checkCollisions = true;
+  edible.computeWorldMatrix(true);
+
+  return edible;
 }
 
 const store = snakeStore;
@@ -86,10 +106,19 @@ function createScene() {
   new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
 
-  renderSnake(scene, store.getState().snake.body);
+  let snakeHead = renderSnake(scene, store.getState().snake.body);
+  renderEdible(scene, store.getState().edible!);
   store.subscribe((state) => {
-    const body = state.snake.body;
-    renderSnake(scene, body);
+    snakeHead = renderSnake(scene, state.snake.body);
+    // edible = renderEdible(scene, state.edible);
+  });
+
+  scene.registerBeforeRender(function () {
+    if (edible && snakeHead.intersectsMesh(edible, false)) {
+      store.getState().eat();
+      edible.dispose();
+      edible = undefined;
+    }
   });
 
   scene.onKeyboardObservable.add((kbInfo) => {

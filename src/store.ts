@@ -4,10 +4,13 @@ import { Coordinates2d, Direction, Snake } from "./types";
 type SnakeStore = {
     fieldSize: Coordinates2d,
     snake: Snake,
+    edible: Coordinates2d | undefined,
+    eaten: boolean;
     timer: number;
     start: () => void;
     moveSnake: () => void;
     changeDirection: (direction: Direction) => void;
+    eat: () => void;
 }
 
 const snakeStore = create<SnakeStore>((set, get) => ({
@@ -16,6 +19,8 @@ const snakeStore = create<SnakeStore>((set, get) => ({
         body: [{ x: 5, y: 5 }, { x: 5, y: 4 }, { x: 5, y: 3 }, { x: 5, y: 2 }],
         currentDirection: Direction.Up,
     },
+    edible: { x: 5, y: 7 },
+    eaten: false,
     timer: 0,
     start() {
         const timer = setTimeout(
@@ -29,11 +34,11 @@ const snakeStore = create<SnakeStore>((set, get) => ({
         set({ timer });
     },
     moveSnake() {
-        const snake = get().snake;
+        const { snake, eaten } = get();
         const direction = snake.currentDirection;
         const newSnake = {
             ...snake,
-            body: snake.body.slice(0, -1)
+            body: snake.body.slice(0, eaten ? snake.body.length : -1)
         };
 
         if (direction === Direction.Up) {
@@ -61,7 +66,7 @@ const snakeStore = create<SnakeStore>((set, get) => ({
             });
         }
 
-        set({ snake: newSnake });
+        set({ snake: newSnake, eaten: false });
     },
     changeDirection(direction) {
         const snake = get().snake;
@@ -70,6 +75,9 @@ const snakeStore = create<SnakeStore>((set, get) => ({
             currentDirection: direction
         };
         set({ snake: newSnake });
+    },
+    eat() {
+        set({ edible: undefined, eaten: true });
     },
 }));
 
