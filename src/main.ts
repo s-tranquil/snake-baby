@@ -40,7 +40,7 @@ function renderSnake(scene: Scene, body: Snake["body"]): Mesh {
 
   body.forEach((segment, index) => {
     const box = MeshBuilder.CreateBox(`snakeBox${index}`, {
-        size: 1,
+        size: 0.99,
     }, scene);
     box.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
     box.material = snakeBodyMaterial;
@@ -119,6 +119,13 @@ function createScene() {
       edible.dispose();
       edible = undefined;
     }
+
+    const snakeBody = snakeMeshCollection.slice(-2);
+    snakeBody.forEach(bodyMesh => {
+      if(bodyMesh.intersectsMesh(snakeHead)) {
+        alert("game over!");
+      }
+    });
   });
 
   scene.onKeyboardObservable.add((kbInfo) => {
