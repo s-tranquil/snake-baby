@@ -1,5 +1,6 @@
 import create from "zustand/vanilla";
 import { Coordinates2d, Direction, Snake } from "./types";
+import { isOppositeDirection } from "./utils";
 
 type SnakeStore = {
     fieldSize: Coordinates2d,
@@ -18,6 +19,7 @@ const snakeStore = create<SnakeStore>((set, get) => ({
     snake: {
         body: [{ x: 5, y: 5 }, { x: 5, y: 4 }, { x: 5, y: 3 }, { x: 5, y: 2 }],
         currentDirection: Direction.Up,
+        nextDirection: Direction.Up,
     },
     edible: { x: 5, y: 7 },
     eaten: false,
@@ -35,9 +37,10 @@ const snakeStore = create<SnakeStore>((set, get) => ({
     },
     moveSnake() {
         const { snake, eaten } = get();
-        const direction = snake.currentDirection;
+        const direction = snake.nextDirection;
         const newSnake = {
             ...snake,
+            currentDirection: direction,
             body: snake.body.slice(0, eaten ? snake.body.length : -1)
         };
 
@@ -69,10 +72,16 @@ const snakeStore = create<SnakeStore>((set, get) => ({
         set({ snake: newSnake, eaten: false });
     },
     changeDirection(direction) {
-        const snake = get().snake;
+        const { snake } = get();
+        if (snake.nextDirection === direction) {
+            return;
+        }
+        if (isOppositeDirection(snake.currentDirection, direction)) {
+            return;
+        }
         const newSnake = {
             ...snake,
-            currentDirection: direction
+            nextDirection: direction,
         };
         set({ snake: newSnake });
     },
