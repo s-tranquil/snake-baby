@@ -5,7 +5,7 @@ import { isOppositeDirection } from "./utils";
 type SnakeStore = {
     fieldSize: Coordinates2d,
     snake: Snake,
-    edible: Coordinates2d | undefined,
+    edible: Coordinates2d,
     eaten: boolean;
     timer: number;
     start: () => void;
@@ -36,7 +36,7 @@ const snakeStore = create<SnakeStore>((set, get) => ({
         set({ timer });
     },
     moveSnake() {
-        const { snake, eaten } = get();
+        const { snake, eaten, fieldSize } = get();
         const direction = snake.nextDirection;
         const newSnake = {
             ...snake,
@@ -44,28 +44,30 @@ const snakeStore = create<SnakeStore>((set, get) => ({
             body: snake.body.slice(0, eaten ? snake.body.length : -1)
         };
 
+        const { x, y } = snake.body[0];
+
         if (direction === Direction.Up) {
             newSnake.body.unshift({
-                x: snake.body[0].x,
-                y: snake.body[0].y + 1
+                x: x,
+                y: y === fieldSize.y - 1 ? 0 : y + 1
             });
         }
         if (direction === Direction.Down) {
             newSnake.body.unshift({
-                x: snake.body[0].x,
-                y: snake.body[0].y - 1
+                x: x,
+                y: y === 0 ? fieldSize.y - 1 : y - 1
             });
         }
         if (direction === Direction.Left) {
             newSnake.body.unshift({
-                x: snake.body[0].x - 1,
-                y: snake.body[0].y
+                x: x === 0 ? fieldSize.x - 1 : x - 1,
+                y: y
             });
         }
         if (direction === Direction.Right) {
             newSnake.body.unshift({
-                x: snake.body[0].x + 1,
-                y: snake.body[0].y
+                x: x === fieldSize.x - 1 ? 0 : x + 1,
+                y: y
             });
         }
 
