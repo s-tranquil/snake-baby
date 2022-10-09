@@ -1,4 +1,5 @@
 import create from "zustand/vanilla";
+import shallow from "zustand/shallow";
 import { Coordinates2d, Direction, Snake } from "./types";
 import { isOppositeDirection } from "./utils";
 
@@ -88,7 +89,23 @@ const snakeStore = create<SnakeStore>((set, get) => ({
         set({ snake: newSnake });
     },
     eat() {
-        set({ edible: undefined, eaten: true });
+        set((state) => {
+            let nextEdible: Coordinates2d;
+            do {
+                nextEdible = {
+                    x: Math.floor(Math.random() * state.fieldSize.x),
+                    y: Math.floor(Math.random() * state.fieldSize.y),
+                }
+            } while (
+                shallow(nextEdible, state.edible) ||
+                state.snake.body.some(segment => shallow(nextEdible, segment))
+            );
+
+            return {
+                edible: nextEdible,
+                eaten: true,
+            };
+        });
     },
 }));
 

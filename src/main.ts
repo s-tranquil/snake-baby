@@ -39,17 +39,17 @@ function renderSnake(scene: Scene, body: Snake["body"]): Mesh {
   snakeMeshCollection.splice(0, snakeMeshCollection.length);
 
   body.forEach((segment, index) => {
-    const box = MeshBuilder.CreateBox(`snakeBox${index}`, {
+    const bodySegment = MeshBuilder.CreateBox(`snakeBox${index}`, {
         size: 0.99,
     }, scene);
-    box.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
-    box.material = snakeBodyMaterial;
-    box.checkCollisions = true;
-    snakeMeshCollection.push(box);
+    bodySegment.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
+    bodySegment.material = snakeBodyMaterial;
+    bodySegment.computeWorldMatrix(true);
+    bodySegment.checkCollisions = true;
+    snakeMeshCollection.push(bodySegment);
   });
 
   const head = snakeMeshCollection[0];
-  head.computeWorldMatrix(true);
   return head;
 }
 
@@ -58,8 +58,8 @@ function renderEdible(scene: Scene, edibleLocation: Coordinates2d): Mesh {
   const edibleMaterial = new StandardMaterial("edibleMaterial", scene);
   edibleMaterial.diffuseColor = Color3.Red();
 
+  edible?.dispose();
   edible = undefined;
-  // const edible = MeshBuilder.CreateSphere("edible", { diameter: 1 }, scene);
   edible = MeshBuilder.CreateSphere("edible", { diameter: 0.99 }, scene);
   edible.position = new Vector3(edibleLocation.x, HALF_CUBE_SIZE, edibleLocation.y);
   edible.material = edibleMaterial;
@@ -107,10 +107,10 @@ function createScene() {
 
 
   let snakeHead = renderSnake(scene, store.getState().snake.body);
-  renderEdible(scene, store.getState().edible!);
+  renderEdible(scene, store.getState().edible);
   store.subscribe((state) => {
     snakeHead = renderSnake(scene, state.snake.body);
-    // edible = renderEdible(scene, state.edible);
+    edible = renderEdible(scene, state.edible);
   });
 
   scene.registerBeforeRender(function () {
