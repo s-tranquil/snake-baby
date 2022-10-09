@@ -21,5 +21,9 @@
     "@typescript-eslint/parser": "^5.38.1",
     "eslint": "^8.24.0",
     "zustand": "^4.1.1"
+  },
+  "engines": {
+    "yarn": "1.x",
+    "node": "16.x"
   }
 }
