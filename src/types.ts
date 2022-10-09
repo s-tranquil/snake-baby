@@ -13,4 +13,5 @@ export enum Direction {
 export interface Snake {
     body: Coordinates2d[],
     currentDirection: Direction,
+    nextDirection: Direction,
 }
