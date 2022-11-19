@@ -8,6 +8,7 @@ type SnakeStore = {
     snake: Snake,
     edible: Coordinates2d,
     eaten: boolean;
+    started: boolean;
     timer: number;
     start: () => void;
     moveSnake: () => void;
@@ -24,17 +25,10 @@ const snakeStore = create<SnakeStore>((set, get) => ({
     },
     edible: { x: 5, y: 7 },
     eaten: false,
+    started: false,
     timer: 0,
     start() {
-        const timer = setTimeout(
-            () => {
-                const state = get();
-                state.moveSnake();
-                state.start();
-            },
-            500
-        );
-        set({ timer });
+        this.started = true;
     },
     moveSnake() {
         const { snake, eaten, fieldSize } = get();

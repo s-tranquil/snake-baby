@@ -31,26 +31,39 @@ function createLines(x: number, y: number) {
 }
 
 const snakeMeshCollection: Mesh[] = [];
+let snakeBodyMaterial: StandardMaterial | null = null;
 function renderSnake(scene: Scene, body: Snake["body"]): Mesh {
-  const snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
+  snakeBodyMaterial = new StandardMaterial("snakeBodyMaterial", scene);
   snakeBodyMaterial.diffuseColor = new Color3(0, 1, 0);
 
   snakeMeshCollection.forEach(x => x.dispose());
   snakeMeshCollection.splice(0, snakeMeshCollection.length);
 
   body.forEach((segment, index) => {
-    const bodySegment = MeshBuilder.CreateBox(`snakeBox${index}`, {
-        size: 0.99,
-    }, scene);
-    bodySegment.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
-    bodySegment.material = snakeBodyMaterial;
-    bodySegment.computeWorldMatrix(true);
-    bodySegment.checkCollisions = true;
-    snakeMeshCollection.push(bodySegment);
+    addSnakeSegment(segment, index, scene);
   });
 
   const head = snakeMeshCollection[0];
+  const snakeHeadMaterial = new StandardMaterial("snakeHeadMaterial", scene);
+  snakeHeadMaterial.diffuseColor = new Color3(0.2, 0.6, 0.2);
+  head.material = snakeHeadMaterial;
+
   return head;
+}
+
+function getSnakeSegmentId(index: number) {
+  return `snakeBox${index}`;
+}
+
+function addSnakeSegment(segment: Coordinates2d, index: number, scene: Scene) {
+  const bodySegment = MeshBuilder.CreateBox(getSnakeSegmentId(index), {
+      size: 0.99,
+  }, scene);
+  bodySegment.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y)
+  bodySegment.material = snakeBodyMaterial;
+  bodySegment.computeWorldMatrix(true);
+  bodySegment.checkCollisions = true;
+  snakeMeshCollection.push(bodySegment);
 }
 
 let edible: Mesh | undefined;
@@ -106,14 +119,36 @@ function createScene() {
   new HemisphericLight("light", new Vector3(0, 1, 0), scene);
 
 
-  let snakeHead = renderSnake(scene, store.getState().snake.body);
+  const snakeHead = renderSnake(scene, store.getState().snake.body);
   renderEdible(scene, store.getState().edible);
   store.subscribe((state) => {
-    snakeHead = renderSnake(scene, state.snake.body);
+    state.snake.body.forEach((segment, index) => {
+      const mesh = snakeMeshCollection.find(mesh => mesh.name === getSnakeSegmentId(index));
+      if (mesh) {
+        mesh.position = new Vector3(segment.x, HALF_CUBE_SIZE, segment.y);
+      } else {
+        addSnakeSegment(segment, index, scene);
+      }
+    });
+
+    // snakeHead = renderSnake(scene, state.snake.body);
     edible = renderEdible(scene, state.edible);
   });
 
+  let startTime = performance.now();
+  const updateFrequency = 1000 / 2;
   scene.registerBeforeRender(function () {
+
+    const now = performance.now();
+		const delta = (now - startTime);
+    if (delta >= updateFrequency) {
+      startTime = now;
+      const state = store.getState();
+      if (state.started) {
+        state.moveSnake();
+      }
+    }
+
     if (edible && snakeHead.intersectsMesh(edible, false)) {
       store.getState().eat();
       edible.dispose();
@@ -131,24 +166,20 @@ function createScene() {
   scene.onKeyboardObservable.add((kbInfo) => {
 		switch (kbInfo.type) {
 			case KeyboardEventTypes.KEYDOWN:
-				switch (kbInfo.event.key) {
-          case "a":
-          case "A":
+				switch (kbInfo.event.inputIndex) {
+          case 65:
             store.getState().changeDirection(Direction.Left);
             break;
-          case "d":
-          case "D":
+          case 68:
             store.getState().changeDirection(Direction.Right);
             break;
-          case "w":
-          case "W":
+          case 87:
             store.getState().changeDirection(Direction.Up);
             break;
-          case "s":
-          case "S":
+          case 83:
             store.getState().changeDirection(Direction.Down);
             break;
-          case " ":
+          case 32:
             store.getState().start();
             break;
         }
